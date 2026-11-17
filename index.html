@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101a2b">
+<meta name="description" content="Um experimento de personalidade intelectual. Descubra qual professor da FGV EMAp mais combina com a sua maneira de pensar.">
+<title>Qual mente da EMAp é a sua?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="grain"></div>
+<header class="topbar"><a class="brand" href="#" aria-label="Início"><span class="brand-mark">∑</span><span>EMAp <i>PERSONALITY STUDY</i></span></a><span class="top-note">UM EXPERIMENTO SOBRE MODOS DE PENSAR</span></header>
+<main>
+<section id="intro" class="screen intro active">
+  <div class="eyebrow"><span class="eyebrow-line"></span> FGV · ESCOLA DE MATEMÁTICA APLICADA · 2026</div>
+  <div class="hero-grid">
+    <div class="hero-copy">
+      <p class="overline">NÃO É SOBRE O QUE VOCÊ SABE.</p>
+      <h1>É sobre<br><em>como você</em><br>pensa.</h1>
+      <p class="lead">Um retrato da sua personalidade intelectual a partir de escolhas, intuições e pequenos dilemas. Ao final, descubra qual professor da EMAp mais se aproxima do seu jeito de olhar o mundo.</p>
+      <div class="levels" id="levels">
+        <button class="level" data-n="10"><em>RÁPIDO</em><strong>10</strong><span>perguntas · ~3 min<br>visão geral</span></button>
+        <button class="level" data-n="20"><em>EQUILIBRADO</em><strong>20</strong><span>perguntas · ~6 min<br>boa precisão</span></button>
+        <button class="level" data-n="30"><em>PROFUNDO</em><strong>30</strong><span>perguntas · ~9 min<br>máxima precisão</span></button>
+      </div>
+      <p class="duration">ESCOLHA O NÍVEL <b>·</b> 36 DOCENTES <b>·</b> QUANTO MAIS PERGUNTAS, MAIS PRECISO</p>
+      <div class="disclaimer">Não existem respostas certas. Não há perguntas de matemática.</div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="orbit orbit-c"></div>
+      <div class="art-core">∫<small>THINK</small></div>
+      <span class="node n1">01</span><span class="node n2">∞</span><span class="node n3">?</span><span class="node n4">∂</span>
+      <div class="art-caption">A PERSONALIDADE<br>COMO UM ESPAÇO DE POSSIBILIDADES</div>
+    </div>
+  </div>
+  <div class="intro-footer"><span>01 — INTUIÇÃO</span><span>02 — PREFERÊNCIAS</span><span>03 — AFINIDADE</span></div>
+</section>
+
+<section id="quiz" class="screen quiz">
+  <div class="quiz-head"><div><div class="eyebrow">O EXPERIMENTO</div><div class="question-count" id="count">QUESTÃO 01 <span>/ 10</span></div></div><button id="quit" class="text-button">Sair ×</button></div>
+  <div class="progress"><div id="progress-fill"></div></div>
+  <div class="question-wrap"><div class="question-index" id="q-index">01</div><div class="question-content"><p class="overline">ESCOLHA A RESPOSTA QUE MAIS SE APROXIMA DE VOCÊ</p><h2 id="prompt"></h2><div id="answers" class="answers"></div><div class="question-foot"><span>CONFIE NA PRIMEIRA INTUIÇÃO.</span><span>SEM RESPOSTA CERTA OU ERRADA</span></div></div></div>
+</section>
+
+<section id="result" class="screen result">
+  <div class="result-top"><div class="eyebrow">SEU RETRATO INTELECTUAL</div><button id="restart" class="text-button">Refazer ↻</button></div>
+  <div class="result-layout">
+    <div class="result-main"><div class="result-kicker">SUA MAIOR AFINIDADE É COM</div><div class="result-number">EMAp <span>— MATCH</span> <span id="level-tag"></span></div><h1 id="winner"></h1><p id="field" class="result-field"></p><div class="match-row"><div class="match-track"><div id="match-fill"></div></div><strong id="match-value"></strong></div><div id="description" class="result-description"></div><div class="result-actions"><button id="share" class="primary">Compartilhar resultado ↗</button><button id="again" class="secondary">Refazer teste</button></div></div>
+    <aside class="result-aside"><div class="aside-label">SEU PERFIL INTELECTUAL</div><div id="traits"></div>
+      <div class="aside-label" style="margin-top:38px">SEU PÓDIO DE AFINIDADES</div><div id="podium"></div>
+      <div class="antagonist"><div class="aside-label">O ANTAGONISTA INTELECTUAL</div><div id="anta-name" class="anta-name"></div><div id="anta-field" class="podium-meta"></div><div id="anta-contrast" class="anta-contrast"></div><p id="anta-text" class="anta-text"></p></div><div class="aside-note">As afinidades comparam seu perfil com perfis editoriais construídos a partir de páginas públicas dos docentes (site da EMAp, páginas pessoais e bases acadêmicas). O antagonista é apenas o perfil mais distante do seu estilo no teste, não um rival. Não são avaliações de personalidade dos professores.</div></aside>
+  </div>
+  <div class="result-bottom"><span>FGV EMAp · PERSONALITY STUDY</span><span id="result-date"></span></div>
+</section>
+</main>
+<footer class="site-footer"><span>UM PROJETO INDEPENDENTE, SEM VÍNCULO INSTITUCIONAL COM A FGV.</span><a href="https://emap.fgv.br/pessoas" target="_blank" rel="noopener">CORPO DOCENTE OFICIAL ↗</a></footer>
+<script src="data.js"></script><script src="app.js"></script>
+</body></html>
