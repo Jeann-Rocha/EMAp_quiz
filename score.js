@@ -7,7 +7,7 @@ function zProfiles(profiles){
  const cm=Array.from({length:8},(_,k)=>mean(profiles.map(p=>p.t[k])));
  return profiles.map(p=>p.t.map((x,k)=>x-cm[k]));
 }
-let W_DIRECT=4;
+let W_DIRECT=2.5;
 function rank(user,direct,profiles,poss){
  const Z=zProfiles(profiles);
  poss=poss||{};
@@ -21,7 +21,7 @@ function rank(user,direct,profiles,poss){
   return {p,r:rRaw,z:r,d,s:r+W_DIRECT*d};
  }).sort((a,b)=>b.s-a.s);
 }
-function possible(questions){const o={};questions.forEach(q=>{const m={};q.options.forEach(op=>{for(const k in (op.p||{}))m[k]=Math.max(m[k]||0,op.p[k]);});for(const k in m)o[k]=(o[k]||0)+m[k];});return o;}
+function possible(questions){const o={};questions.forEach(q=>{const m={};for(const k in (q.p||{}))m[k]=2*q.p[k];for(const k in m)o[k]=(o[k]||0)+m[k];});return o;}
 root.Score={mean,corr,zProfiles,rank,possible,W(v){W_DIRECT=v;}};
 if(typeof module!=="undefined")module.exports=root.Score;
 })(typeof window!=="undefined"?window:globalThis);

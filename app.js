@@ -12,27 +12,28 @@ const TRAITS=[
  {n:"Comunicação e visualização",short:"Visual",style:"Você acredita que entender é conseguir mostrar: busca a representação, a imagem ou a explicação que torna o difícil legível.",blind:"Uma boa imagem pode esconder hipóteses frágeis; vale checar o que está por baixo do gráfico."}
 ];
 const LEVELS={10:{name:"Rápido",cap:88,prec:"visão geral"},20:{name:"Equilibrado",cap:93,prec:"boa precisão"},30:{name:"Profundo",cap:97,prec:"alta precisão"}};
-let current=0,total=10,order=[],user=[],direct={},picks=[],shown=[];
+let current=0,total=10,order=[],user=[],direct={},picks=[];
 function show(n){screens.forEach((s,i)=>s.classList.toggle("active",i===n));document.body.dataset.screen=["intro","quiz","result"][n];window.scrollTo({top:0,behavior:"smooth"});}
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function parse(w){const v=Array(8).fill(0);for(const m of w.matchAll(/([TADIMCOV])(\d)/g))v["TADIMCOV".indexOf(m[1])]+=+m[2];return v;}
 // As perguntas foram escritas em blocos de 10; cada nível usa o início do banco.
 function start(n){total=n;current=0;user=Array(8).fill(0);direct={};picks=[];order=QUIZ_DATA.questions.slice(0,n);buildSegments();show(1);renderQuestion();}
 function buildSegments(){const s=$("#segments");s.innerHTML="";for(let i=0;i<total;i++){s.appendChild(document.createElement("i"));}}
+const SCALE=[{a:2,t:"Concordo totalmente"},{a:1,t:"Concordo parcialmente"},{a:0,t:"Indiferente"},{a:-1,t:"Discordo parcialmente"},{a:-2,t:"Discordo totalmente"}];
+const dFac=a=>a>0?a:0.4*a; // discordar pesa menos que concordar como evidência de afinidade com um docente
 function renderQuestion(){
  const q=order[current];
- $("#count").innerHTML=`QUESTÃO ${String(current+1).padStart(2,"0")} <span>/ ${total}</span>`;
+ $("#count").innerHTML=`AFIRMAÇÃO ${String(current+1).padStart(2,"0")} <span>/ ${total}</span>`;
  $("#q-index").textContent=String(current+1).padStart(2,"0");
  [...$("#segments").children].forEach((e,i)=>e.className=i<current?"done":i===current?"now":"");
  $("#back").style.visibility=current?"visible":"hidden";
- $("#prompt").textContent=q.prompt;$("#answers").innerHTML="";
+ $("#prompt").textContent="“"+q.prompt+"”";$("#answers").innerHTML="";
  const card=$(".question-content");card.classList.remove("swap");void card.offsetWidth;card.classList.add("swap");
- shown=shuffle(q.options);
- shown.forEach((o,i)=>{const b=document.createElement("button");b.className="answer";b.innerHTML=`<span class="letter">${String.fromCharCode(65+i)}</span><span class="txt"></span><span class="key">${i+1}</span>`;b.querySelector(".txt").textContent=o.label;b.addEventListener("click",()=>choose(o));$("#answers").appendChild(b);});
+ SCALE.forEach((o,i)=>{const b=document.createElement("button");b.className="likert l"+(i+1);b.innerHTML=`<i class="dot"></i><span class="txt"></span><span class="key">${i+1}</span>`;b.querySelector(".txt").textContent=o.t;b.addEventListener("click",()=>choose(o.a));$("#answers").appendChild(b);});
 }
-function apply(o,sign){parse(o.w).forEach((x,k)=>user[k]+=sign*x);for(const k in (o.p||{}))direct[k]=(direct[k]||0)+sign*o.p[k];}
-function choose(o){apply(o,1);picks.push(o);current++;current<total?renderQuestion():finish();}
-function undo(){if(!current)return;apply(picks.pop(),-1);current--;renderQuestion();}
+function apply(q,a,sign){parse(q.w).forEach((x,k)=>user[k]+=sign*a*x);for(const k in (q.p||{}))direct[k]=(direct[k]||0)+sign*dFac(a)*q.p[k];}
+function choose(a){const q=order[current];apply(q,a,1);picks.push({q,a});current++;current<total?renderQuestion():finish();}
+function undo(){if(!current)return;const x=picks.pop();apply(x.q,x.a,-1);current--;renderQuestion();}
 const {mean}=Score;
 function contrib(u,t,Z){const mu=mean(u),mp=mean(Z);return u.map((x,k)=>(x-mu)*(Z[k]-mp));}
 function p(text,cls){const e=document.createElement("p");if(cls)e.className=cls;e.textContent=text;return e;}
@@ -48,13 +49,13 @@ function avatar(pr,cls){
  return d;
 }
 function radar(el,u,prof){
- const N=8,R=110,C=150,max=Math.max(...u,1);
+ const N=8,R=110,C=150,lo=Math.min(...u),hi=Math.max(...u),nu=u.map(v=>hi>lo?.12+.88*(v-lo)/(hi-lo):.5);
  const pt=(k,v)=>{const a=-Math.PI/2+k*2*Math.PI/N;return[C+Math.cos(a)*R*v,C+Math.sin(a)*R*v];};
  const poly=vals=>vals.map((v,k)=>pt(k,v).join(",")).join(" ");
  let g="";[.25,.5,.75,1].forEach(l=>g+=`<polygon class="ring" points="${poly(Array(N).fill(l))}"/>`);
  for(let k=0;k<N;k++){const[x,y]=pt(k,1);g+=`<line class="spoke" x1="${C}" y1="${C}" x2="${x}" y2="${y}"/>`;}
- g+=`<polygon class="shape prof" points="${poly(prof.t.map(v=>v/5))}"/><polygon class="shape you" points="${poly(u.map(v=>v/max))}"/>`;
- u.forEach((v,k)=>{const[x,y]=pt(k,v/max);g+=`<circle class="dot" cx="${x}" cy="${y}" r="3"/>`;});
+ g+=`<polygon class="shape prof" points="${poly(prof.t.map(v=>v/5))}"/><polygon class="shape you" points="${poly(nu)}"/>`;
+ u.forEach((v,k)=>{const[x,y]=pt(k,nu[k]);g+=`<circle class="dot" cx="${x}" cy="${y}" r="3"/>`;});
  for(let k=0;k<N;k++){const[x,y]=pt(k,1.2);g+=`<text class="lab" x="${x}" y="${y}" text-anchor="${x<C-8?"end":x>C+8?"start":"middle"}" dominant-baseline="middle">${TRAITS[k].short.toUpperCase()}</text>`;}
  el.innerHTML=`<svg viewBox="-30 -5 360 310" role="img" aria-label="Radar dos seus traços comparado ao do docente">${g}</svg>`;
 }
@@ -78,8 +79,8 @@ function finish(){
  const c=contrib(user,pr.t,Zp).map((v,k)=>[v,k]).sort((a,b)=>b[0]-a[0]);
  const shared=c.slice(0,2).map(x=>TRAITS[x[1]].n.toLowerCase()),gap=TRAITS[c[7][1]].n.toLowerCase();
  d.appendChild(p(`Por que ${pr.name}? Suas respostas se alinham a este perfil sobretudo em ${list(shared)}. ${pr.description} Onde vocês mais se afastam é ${gap}, um território em que o seu olhar e o dessa área provavelmente se complementam.`));
- const ev=picks.filter(o=>o.p&&o.p[pr.id]).sort((a,b)=>b.p[pr.id]-a.p[pr.id]).slice(0,3);
- if(ev.length){const b=document.createElement("div");b.className="evidence";b.innerHTML='<span class="tag">ESCOLHAS SUAS QUE APONTAM PARA '+pr.name.split(" ")[0].toUpperCase()+'</span>';const ul=document.createElement("ul");ev.forEach(o=>{const li=document.createElement("li");li.textContent=o.label;ul.appendChild(li);});b.appendChild(ul);d.appendChild(b);}
+ const ev=picks.filter(x=>x.a>0&&x.q.p&&x.q.p[pr.id]).sort((a,b)=>b.a*b.q.p[pr.id]-a.a*a.q.p[pr.id]).slice(0,3).map(x=>x.q);
+ if(ev.length){const b=document.createElement("div");b.className="evidence";b.innerHTML='<span class="tag">AFIRMAÇÕES COM AS QUAIS VOCÊ CONCORDOU E QUE REMETEM A '+pr.name.split(" ")[0].toUpperCase()+'</span>';const ul=document.createElement("ul");ev.forEach(o=>{const li=document.createElement("li");li.textContent="“"+o.prompt+"”";ul.appendChild(li);});b.appendChild(ul);d.appendChild(b);}
  if(pr.note){const n=p("","note");n.innerHTML='<span class="tag">NA PESQUISA PÚBLICA</span>';n.appendChild(document.createTextNode(pr.note));d.appendChild(n);}
  d.appendChild(p(`Ponto cego a observar: ${TRAITS[kl].blind}`));
  d.appendChild(p(total<30?`Este resultado usa ${total} respostas (${L.prec}). Refaça no nível Profundo para um retrato mais fiel.`:`Resultado do nível Profundo, calculado com ${total} respostas.`,"note"));
@@ -103,7 +104,7 @@ $("#quit").addEventListener("click",()=>show(0));
 $("#back").addEventListener("click",undo);
 $("#restart").addEventListener("click",()=>show(0));
 $("#again").addEventListener("click",()=>start(total));
-document.addEventListener("keydown",e=>{if(!screens[1].classList.contains("active"))return;const i=+e.key-1;if(i>=0&&i<shown.length)choose(shown[i]);else if(e.key==="Backspace")undo();});
+document.addEventListener("keydown",e=>{if(!screens[1].classList.contains("active"))return;const i=+e.key-1;if(i>=0&&i<5)choose(SCALE[i].a);else if(e.key==="Backspace")undo();});
 $("#share").addEventListener("click",async()=>{
  const name=$("#winner").textContent,field=$("#field").textContent,anta=$("#anta-name").textContent;
  const text=`Minha maior afinidade intelectual na EMAp é com ${name}!\n${field}\nMeu antagonista: ${anta}\nFaça o teste: ${location.href}`;
