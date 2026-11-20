@@ -43,9 +43,13 @@ function avatar(pr,cls){
  const d=document.createElement("div");d.className="avatar "+(cls||"");
  const ini=initials(pr.name),mono=ini[0]+(ini[ini.length-1]||"");
  d.innerHTML=`<span class="mono"></span>`;d.firstChild.textContent=mono;
- const img=new Image();img.alt=pr.name;img.loading="lazy";img.decoding="async";
- img.onload=()=>{d.classList.add("has-photo");d.appendChild(img);};
- img.src=pr.photo;
+ // tenta fotos/<id>.jpg, .jpeg, .png, .webp (nome em minúsculas, igual ao id em data.js)
+ const exts=["jpg","jpeg","png","webp","JPG","PNG"];let i=0;
+ const img=new Image();img.alt=pr.name;img.decoding="async";
+ img.onload=()=>{if(img.naturalWidth<40){next();return;}d.classList.add("has-photo");d.appendChild(img);};
+ img.onerror=()=>next();
+ function next(){if(i<exts.length)img.src="fotos/"+pr.id+"."+exts[i++];else console.warn("sem foto para",pr.id);}
+ next();
  return d;
 }
 function radar(el,u,prof){
