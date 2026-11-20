@@ -2,74 +2,108 @@ const $=s=>document.querySelector(s);
 const screens=["intro","quiz","result"].map(x=>$("#"+x));
 // Traços: T A D I M C O V (mesma ordem dos vetores dos professores)
 const TRAITS=[
- {n:"Abstração e rigor",low:"rigor formal",style:"Você quer entender por que algo é verdade: procura definições limpas, hipóteses explícitas e argumentos que não deixem brechas.",blind:"Vale lembrar que nem todo problema espera por uma formulação perfeita; às vezes é preciso agir com o que já se tem."},
- {n:"Impacto aplicado",low:"foco em aplicações",style:"Uma ideia só está completa, para você, quando ajuda alguém em um problema real; o contexto importa tanto quanto a técnica.",blind:"Dar espaço a perguntas sem utilidade imediata costuma render as melhores ideias aplicadas de amanhã."},
- {n:"Dados e padrões",low:"análise de dados",style:"Você confia no que os dados mostram e tem faro para regularidades escondidas em grandes volumes de informação.",blind:"Cuidado com padrões sem explicação: um mecanismo ou uma teoria ajudam a separar achado de coincidência."},
- {n:"Incerteza",low:"pensamento probabilístico",style:"Você pensa em termos de probabilidade e confiança: pergunta o quanto pode estar errado antes de afirmar algo.",blind:"Nem tudo precisa virar probabilidade; algumas estruturas são exatas e merecem ser tratadas como tais."},
- {n:"Dinâmica e mecanismos",low:"modelagem de mecanismos",style:"Você enxerga o mundo como sistemas que evoluem: quer saber quais engrenagens produzem o comportamento observado.",blind:"Modelos mecanicistas só valem se confrontados com dados; evite se apaixonar pela própria engrenagem."},
- {n:"Construção e computação",low:"computação",style:"Você pensa construindo: prototipa, programa, testa e aprende com o que roda. Um algoritmo é, para você, uma forma de compreender.",blind:"Antes de implementar, vale parar e perguntar se o problema está bem formulado."},
- {n:"Decisão e otimização",low:"otimização",style:"Você enxerga escolhas, custos e compromissos: quer saber qual é a melhor decisão possível e quais garantias existem.",blind:"Nem toda boa pergunta é uma decisão; explorar sem a pressão de escolher também tem valor."},
- {n:"Comunicação e visualização",low:"comunicação visual",style:"Você acredita que entender é conseguir mostrar: busca a representação, a imagem ou a explicação que torna o difícil legível.",blind:"Uma boa imagem pode esconder hipóteses frágeis; vale checar o que está por baixo do gráfico."}
+ {n:"Abstração e rigor",short:"Rigor",style:"Você quer entender por que algo é verdade: procura definições limpas, hipóteses explícitas e argumentos que não deixem brechas.",blind:"Vale lembrar que nem todo problema espera por uma formulação perfeita; às vezes é preciso agir com o que já se tem."},
+ {n:"Impacto aplicado",short:"Aplicação",style:"Uma ideia só está completa, para você, quando ajuda alguém em um problema real; o contexto importa tanto quanto a técnica.",blind:"Dar espaço a perguntas sem utilidade imediata costuma render as melhores ideias aplicadas de amanhã."},
+ {n:"Dados e padrões",short:"Dados",style:"Você confia no que os dados mostram e tem faro para regularidades escondidas em grandes volumes de informação.",blind:"Cuidado com padrões sem explicação: um mecanismo ou uma teoria ajudam a separar achado de coincidência."},
+ {n:"Incerteza",short:"Incerteza",style:"Você pensa em termos de probabilidade e confiança: pergunta o quanto pode estar errado antes de afirmar algo.",blind:"Nem tudo precisa virar probabilidade; algumas estruturas são exatas e merecem ser tratadas como tais."},
+ {n:"Dinâmica e mecanismos",short:"Dinâmica",style:"Você enxerga o mundo como sistemas que evoluem: quer saber quais engrenagens produzem o comportamento observado.",blind:"Modelos mecanicistas só valem se confrontados com dados; evite se apaixonar pela própria engrenagem."},
+ {n:"Construção e computação",short:"Computação",style:"Você pensa construindo: prototipa, programa, testa e aprende com o que roda. Um algoritmo é, para você, uma forma de compreender.",blind:"Antes de implementar, vale parar e perguntar se o problema está bem formulado."},
+ {n:"Decisão e otimização",short:"Decisão",style:"Você enxerga escolhas, custos e compromissos: quer saber qual é a melhor decisão possível e quais garantias existem.",blind:"Nem toda boa pergunta é uma decisão; explorar sem a pressão de escolher também tem valor."},
+ {n:"Comunicação e visualização",short:"Visual",style:"Você acredita que entender é conseguir mostrar: busca a representação, a imagem ou a explicação que torna o difícil legível.",blind:"Uma boa imagem pode esconder hipóteses frágeis; vale checar o que está por baixo do gráfico."}
 ];
 const LEVELS={10:{name:"Rápido",cap:88,prec:"visão geral"},20:{name:"Equilibrado",cap:93,prec:"boa precisão"},30:{name:"Profundo",cap:97,prec:"alta precisão"}};
-let current=0,total=10,order=[],user=[],answered=0;
-function show(n){screens.forEach((s,i)=>s.classList.toggle("active",i===n));window.scrollTo({top:0,behavior:"smooth"});}
+let current=0,total=10,order=[],user=[],direct={},picks=[],shown=[];
+function show(n){screens.forEach((s,i)=>s.classList.toggle("active",i===n));document.body.dataset.screen=["intro","quiz","result"][n];window.scrollTo({top:0,behavior:"smooth"});}
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 function parse(w){const v=Array(8).fill(0);for(const m of w.matchAll(/([TADIMCOV])(\d)/g))v["TADIMCOV".indexOf(m[1])]+=+m[2];return v;}
-// As perguntas foram escritas em blocos de 10 equilibrados entre os traços; cada nível usa o início do banco.
-function start(n){total=n;current=0;answered=0;user=Array(8).fill(0);order=QUIZ_DATA.questions.slice(0,n);show(1);renderQuestion();}
+// As perguntas foram escritas em blocos de 10; cada nível usa o início do banco.
+function start(n){total=n;current=0;user=Array(8).fill(0);direct={};picks=[];order=QUIZ_DATA.questions.slice(0,n);buildSegments();show(1);renderQuestion();}
+function buildSegments(){const s=$("#segments");s.innerHTML="";for(let i=0;i<total;i++){s.appendChild(document.createElement("i"));}}
 function renderQuestion(){
  const q=order[current];
  $("#count").innerHTML=`QUESTÃO ${String(current+1).padStart(2,"0")} <span>/ ${total}</span>`;
  $("#q-index").textContent=String(current+1).padStart(2,"0");
- $("#progress-fill").style.width=`${current/total*100}%`;
+ [...$("#segments").children].forEach((e,i)=>e.className=i<current?"done":i===current?"now":"");
+ $("#back").style.visibility=current?"visible":"hidden";
  $("#prompt").textContent=q.prompt;$("#answers").innerHTML="";
- shuffle(q.options).forEach((o,i)=>{const b=document.createElement("button");b.className="answer";b.innerHTML=`<span class="letter">${String.fromCharCode(65+i)}</span><span></span>`;b.querySelector("span:last-child").textContent=o.label;b.addEventListener("click",()=>choose(o));$("#answers").appendChild(b);});
+ const card=$(".question-content");card.classList.remove("swap");void card.offsetWidth;card.classList.add("swap");
+ shown=shuffle(q.options);
+ shown.forEach((o,i)=>{const b=document.createElement("button");b.className="answer";b.innerHTML=`<span class="letter">${String.fromCharCode(65+i)}</span><span class="txt"></span><span class="key">${i+1}</span>`;b.querySelector(".txt").textContent=o.label;b.addEventListener("click",()=>choose(o));$("#answers").appendChild(b);});
 }
-function choose(o){parse(o.w).forEach((x,k)=>user[k]+=x);answered++;current++;current<total?renderQuestion():finish();}
-const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
-function corr(a,b){const ma=mean(a),mb=mean(b);let n=0,da=0,db=0;a.forEach((x,i)=>{n+=(x-ma)*(b[i]-mb);da+=(x-ma)**2;db+=(b[i]-mb)**2;});return da&&db?n/Math.sqrt(da*db):0;}
-function contrib(u,p){const mu=mean(u),mp=mean(p);return u.map((x,k)=>(x-mu)*(p[k]-mp));}
+function apply(o,sign){parse(o.w).forEach((x,k)=>user[k]+=sign*x);for(const k in (o.p||{}))direct[k]=(direct[k]||0)+sign*o.p[k];}
+function choose(o){apply(o,1);picks.push(o);current++;current<total?renderQuestion():finish();}
+function undo(){if(!current)return;apply(picks.pop(),-1);current--;renderQuestion();}
+const {mean}=Score;
+function contrib(u,t,Z){const mu=mean(u),mp=mean(Z);return u.map((x,k)=>(x-mu)*(Z[k]-mp));}
 function p(text,cls){const e=document.createElement("p");if(cls)e.className=cls;e.textContent=text;return e;}
 function list(a){return a.length>1?a.slice(0,-1).join(", ")+" e "+a[a.length-1]:a[0]||"";}
+const initials=n=>n.split(" ").filter(w=>/^[A-ZÀ-Ú]/.test(w)&&w.length>2).map(w=>w[0]);
+function avatar(pr,cls){
+ const d=document.createElement("div");d.className="avatar "+(cls||"");
+ const ini=initials(pr.name),mono=ini[0]+(ini[ini.length-1]||"");
+ d.innerHTML=`<span class="mono"></span>`;d.firstChild.textContent=mono;
+ const img=new Image();img.alt=pr.name;img.loading="lazy";img.decoding="async";
+ img.onload=()=>{d.classList.add("has-photo");d.appendChild(img);};
+ img.src=pr.photo;
+ return d;
+}
+function radar(el,u,prof){
+ const N=8,R=110,C=150,max=Math.max(...u,1);
+ const pt=(k,v)=>{const a=-Math.PI/2+k*2*Math.PI/N;return[C+Math.cos(a)*R*v,C+Math.sin(a)*R*v];};
+ const poly=vals=>vals.map((v,k)=>pt(k,v).join(",")).join(" ");
+ let g="";[.25,.5,.75,1].forEach(l=>g+=`<polygon class="ring" points="${poly(Array(N).fill(l))}"/>`);
+ for(let k=0;k<N;k++){const[x,y]=pt(k,1);g+=`<line class="spoke" x1="${C}" y1="${C}" x2="${x}" y2="${y}"/>`;}
+ g+=`<polygon class="shape prof" points="${poly(prof.t.map(v=>v/5))}"/><polygon class="shape you" points="${poly(u.map(v=>v/max))}"/>`;
+ u.forEach((v,k)=>{const[x,y]=pt(k,v/max);g+=`<circle class="dot" cx="${x}" cy="${y}" r="3"/>`;});
+ for(let k=0;k<N;k++){const[x,y]=pt(k,1.2);g+=`<text class="lab" x="${x}" y="${y}" text-anchor="${x<C-8?"end":x>C+8?"start":"middle"}" dominant-baseline="middle">${TRAITS[k].short.toUpperCase()}</text>`;}
+ el.innerHTML=`<svg viewBox="-30 -5 360 310" role="img" aria-label="Radar dos seus traços comparado ao do docente">${g}</svg>`;
+}
 function finish(){
- const ranked=QUIZ_DATA.profiles.map(pr=>({p:pr,r:corr(user,pr.t)})).sort((a,b)=>b.r-a.r);
- const top=ranked[0],anti=ranked[ranked.length-1],L=LEVELS[total];
+ const ranked=Score.rank(user,direct,QUIZ_DATA.profiles,Score.possible(order));
+ const top=ranked[0],pr=top.p,L=LEVELS[total];
+ // o antagonista é o perfil mais distante em traços, sem influência do sinal direto
+ const byTraits=ranked.slice().sort((a,b)=>(a.r+a.z)-(b.r+b.z)),anti=byTraits[0];
  const sorted=user.map((v,k)=>[v,k]).sort((a,b)=>b[0]-a[0]),k1=sorted[0][1],k2=sorted[1][1],kl=sorted[7][1];
- const pct=Math.min(L.cap,Math.max(60,Math.round(50+50*top.r)));
- $("#winner").textContent=top.p.name;
- $("#field").textContent=top.p.role.toUpperCase()+"  ·  "+top.p.field.toUpperCase();
- $("#match-value").textContent=pct+"%";$("#match-fill").style.width=pct+"%";
+ const x=top.r*0.5+Math.min(1,top.d)*0.5;
+ const pct=Math.min(L.cap,Math.max(60,Math.round(56+42*x)));
+ $("#winner").textContent=pr.name;
+ $("#field").textContent=pr.role.toUpperCase()+"  ·  "+pr.field.toUpperCase();
+ $("#portrait").innerHTML="";$("#portrait").appendChild(avatar(pr,"xl"));
+ $("#match-value").textContent="0%";$("#match-fill").style.width="0";
+ requestAnimationFrame(()=>setTimeout(()=>{$("#match-fill").style.width=pct+"%";let c=0;const t=setInterval(()=>{c+=2;if(c>=pct){c=pct;clearInterval(t);}$("#match-value").textContent=c+"%";},14);},120));
  $("#level-tag").textContent=`· NÍVEL ${L.name.toUpperCase()} (${total})`;
- // descrição detalhada
  const d=$("#description");d.innerHTML="";
- d.appendChild(p(`O seu jeito de pensar: ${TRAITS[k1].style} Logo em seguida vem ${TRAITS[k2].n.toLowerCase()}: ${TRAITS[k2].style.charAt(0).toLowerCase()+TRAITS[k2].style.slice(1)}`));
- const c=contrib(user,top.p.t).map((v,k)=>[v,k]).sort((a,b)=>b[0]-a[0]);
+ d.appendChild(p(`O seu jeito de pensar. ${TRAITS[k1].style} Logo em seguida vem ${TRAITS[k2].n.toLowerCase()}: ${TRAITS[k2].style.charAt(0).toLowerCase()+TRAITS[k2].style.slice(1)}`));
+ const Zp=Score.zProfiles(QUIZ_DATA.profiles)[QUIZ_DATA.profiles.indexOf(pr)];
+ const c=contrib(user,pr.t,Zp).map((v,k)=>[v,k]).sort((a,b)=>b[0]-a[0]);
  const shared=c.slice(0,2).map(x=>TRAITS[x[1]].n.toLowerCase()),gap=TRAITS[c[7][1]].n.toLowerCase();
- d.appendChild(p(`Por que ${top.p.name}? Suas respostas se alinham a este perfil sobretudo em ${list(shared)}. ${top.p.description} Onde vocês mais se afastam é ${gap}, um território em que o seu olhar e o dessa área provavelmente se complementam.`));
- if(top.p.note){const n=p("","note");n.innerHTML='<span class="tag">NA PESQUISA PÚBLICA</span>';n.appendChild(document.createTextNode(top.p.note));d.appendChild(n);}
+ d.appendChild(p(`Por que ${pr.name}? Suas respostas se alinham a este perfil sobretudo em ${list(shared)}. ${pr.description} Onde vocês mais se afastam é ${gap}, um território em que o seu olhar e o dessa área provavelmente se complementam.`));
+ const ev=picks.filter(o=>o.p&&o.p[pr.id]).sort((a,b)=>b.p[pr.id]-a.p[pr.id]).slice(0,3);
+ if(ev.length){const b=document.createElement("div");b.className="evidence";b.innerHTML='<span class="tag">ESCOLHAS SUAS QUE APONTAM PARA '+pr.name.split(" ")[0].toUpperCase()+'</span>';const ul=document.createElement("ul");ev.forEach(o=>{const li=document.createElement("li");li.textContent=o.label;ul.appendChild(li);});b.appendChild(ul);d.appendChild(b);}
+ if(pr.note){const n=p("","note");n.innerHTML='<span class="tag">NA PESQUISA PÚBLICA</span>';n.appendChild(document.createTextNode(pr.note));d.appendChild(n);}
  d.appendChild(p(`Ponto cego a observar: ${TRAITS[kl].blind}`));
  d.appendChild(p(total<30?`Este resultado usa ${total} respostas (${L.prec}). Refaça no nível Profundo para um retrato mais fiel.`:`Resultado do nível Profundo, calculado com ${total} respostas.`,"note"));
- // barras de traços
- const max=Math.max(...user,1);$("#traits").innerHTML="";
- user.forEach((v,k)=>{const r=document.createElement("div");r.className="trait-row";r.innerHTML='<span></span><div class="trait-track"><i></i></div>';r.firstChild.textContent=TRAITS[k].n.toUpperCase();r.querySelector("i").style.width=Math.round(v/max*100)+"%";$("#traits").appendChild(r);});
- // pódio
+ radar($("#radar"),user,pr);
  $("#podium").innerHTML="";
- ranked.slice(1,4).forEach((x,j)=>{const el=document.createElement("div");el.className="podium-item";el.innerHTML=`<div><div class="podium-name"></div><div class="podium-meta"></div></div><div class="podium-score"></div>`;el.querySelector(".podium-name").textContent=x.p.name;el.querySelector(".podium-meta").textContent=x.p.field;el.querySelector(".podium-score").textContent=`#${j+2}`;$("#podium").appendChild(el);});
- // antagonista
- const ac=contrib(user,anti.p.t).map((v,k)=>[v,k]).sort((a,b)=>a[0]-b[0]).slice(0,2);
- const mu=mean(user),mp=mean(anti.p.t);
+ ranked.slice(1,4).forEach((r,j)=>{const el=document.createElement("div");el.className="podium-item";el.appendChild(avatar(r.p,"sm"));const w=document.createElement("div");w.className="podium-txt";w.innerHTML='<div class="podium-name"></div><div class="podium-meta"></div>';w.querySelector(".podium-name").textContent=r.p.name;w.querySelector(".podium-meta").textContent=r.p.field;el.appendChild(w);const s=document.createElement("div");s.className="podium-score";s.textContent="#"+(j+2);el.appendChild(s);$("#podium").appendChild(el);});
+ const ac=contrib(user,anti.p.t,Score.zProfiles(QUIZ_DATA.profiles)[QUIZ_DATA.profiles.indexOf(anti.p)]).map((v,k)=>[v,k]).sort((a,b)=>a[0]-b[0]).slice(0,2);
+ const mu=mean(user);
  const lines=ac.map(([,k])=>user[k]>mu?`você valoriza ${TRAITS[k].n.toLowerCase()}, que pesa pouco nesse perfil`:`este perfil se apoia em ${TRAITS[k].n.toLowerCase()}, que pesa pouco no seu jeito de pensar`);
+ $("#anta-avatar").innerHTML="";$("#anta-avatar").appendChild(avatar(anti.p,"md"));
  $("#anta-name").textContent=anti.p.name;$("#anta-field").textContent=anti.p.field;
- $("#anta-contrast").textContent=`CONTRASTE ${Math.min(L.cap,Math.round(50-50*anti.r))}%`;
+ $("#anta-contrast").textContent=`CONTRASTE ${Math.min(L.cap,Math.max(50,Math.round(50-50*anti.r)))}%`;
  $("#anta-text").textContent=`É o perfil mais distante do seu no teste: ${lines.join("; e ")}. Não é rivalidade, é o contraponto ideal: uma conversa entre vocês cobriria exatamente o que cada um costuma deixar de lado.`;
  $("#result-date").textContent=new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"long",year:"numeric"}).format(new Date());
  show(2);
 }
+// letreiro com o corpo docente na abertura
+(function(){const t=$("#ticker");if(!t)return;const names=QUIZ_DATA.profiles.map(x=>x.name);const row=names.map(n=>`<span>${n}</span>`).join("");t.innerHTML=`<div class="ticker-in">${row}${row}</div>`;})();
 document.querySelectorAll(".level").forEach(b=>b.addEventListener("click",()=>start(+b.dataset.n)));
 $("#quit").addEventListener("click",()=>show(0));
+$("#back").addEventListener("click",undo);
 $("#restart").addEventListener("click",()=>show(0));
 $("#again").addEventListener("click",()=>start(total));
+document.addEventListener("keydown",e=>{if(!screens[1].classList.contains("active"))return;const i=+e.key-1;if(i>=0&&i<shown.length)choose(shown[i]);else if(e.key==="Backspace")undo();});
 $("#share").addEventListener("click",async()=>{
  const name=$("#winner").textContent,field=$("#field").textContent,anta=$("#anta-name").textContent;
  const text=`Minha maior afinidade intelectual na EMAp é com ${name}!\n${field}\nMeu antagonista: ${anta}\nFaça o teste: ${location.href}`;
